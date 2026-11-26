@@ -162,6 +162,7 @@ async function stop(){
   $('ready').hidden = false; $('recording').hidden = true;
   msg(r.fixes < 20 ? 'Stopped. Very little GPS data was recorded, so this one may not import.' : 'Saved on this phone. Tap “Save file” below to export it.');
   renderList();
+  if (r.fixes >= 20 && navigator.onLine) { var m0 = r.meta(); addRoads(m0).then(function(m1){ if (m1.roads) renderList(); }); }
 }
 document.addEventListener('visibilitychange', async function(){
   if (!R) return;
@@ -180,16 +181,66 @@ document.addEventListener('visibilitychange', async function(){
   b.addEventListener('keyup', end);
 })();
 
+/* ---- road map from OpenStreetMap (Overpass API), saved into the recording ---- */
+var OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+var CLS = { motorway:0, trunk:0, motorway_link:0, trunk_link:0, primary:1, primary_link:1, secondary:2, secondary_link:2, tertiary:3, tertiary_link:3, unclassified:4, residential:4, living_street:4, road:4 };
+function hav(a, b, c, d){ var r = Math.PI/180, x = Math.pow(Math.sin((c-a)*r/2),2) + Math.cos(a*r)*Math.cos(c*r)*Math.pow(Math.sin((d-b)*r/2),2); return 12742000*Math.asin(Math.sqrt(x)); }
+function pathFor(gps){ // GPS points about 150 m apart, at most 500
+  var pts = [], last = null;
+  gps.forEach(function(g){ if (g[5] != null && g[5] > 40) return; if (!last || hav(last[1], last[2], g[1], g[2]) >= 150) { pts.push(g); last = g; } });
+  if (gps.length && pts[pts.length-1] !== gps[gps.length-1]) pts.push(gps[gps.length-1]);
+  var step = Math.ceil(pts.length / 500); return pts.filter(function(_, i){ return i % step === 0; });
+}
+async function fetchRoads(gps){
+  var pts = pathFor(gps); if (pts.length < 2) return null;
+  var line = pts.map(function(g){ return g[1].toFixed(5) + ',' + g[2].toFixed(5); }).join(',');
+  var q = '[out:json][timeout:40];(way(around:300,' + line + ')[highway~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|road)(_link)?$"];way(around:600,' + line + ')[waterway~"^(river|stream)$"];);out geom;';
+  for (var i = 0; i < OVERPASS.length; i++) {
+    try {
+      var ctl = new AbortController(), to = setTimeout(function(){ ctl.abort(); }, 45000);
+      var r = await fetch(OVERPASS[i], { method:'POST', body:'data=' + encodeURIComponent(q), headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, signal:ctl.signal });
+      clearTimeout(to);
+      if (!r.ok) continue;
+      var js = await r.json();
+      return (js.elements || []).filter(function(e){ return e.type === 'way' && e.geometry && e.geometry.length > 1; }).map(function(e){
+        var t = e.tags || {}, c = t.waterway ? 5 : CLS[t.highway]; var p = [];
+        e.geometry.forEach(function(n){ p.push(+n.lat.toFixed(5), +n.lon.toFixed(5)); });
+        return { c:c, p:p };
+      }).filter(function(w){ return w.c != null; });
+    } catch(e) {}
+  }
+  return null;
+}
+async function allGps(id){ var ch = await chunksOf(id), g = []; ch.forEach(function(c){ g = g.concat(c.gps); }); return g; }
+async function addRoads(meta){
+  if (meta.roads || !navigator.onLine) return meta;
+  var roads = await fetchRoads(await allGps(meta.id));
+  if (roads) { meta.roads = roads; try { await tx('recs', 'readwrite', function(t){ t.objectStore('recs').put(meta); }); } catch(e) {} }
+  return meta;
+}
+
 function pad(n){ return String(n).padStart(2,'0'); }
 function fname(ms){ var d = new Date(ms); return 'heeltoe-' + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + '.json'; }
 async function buildFile(meta){
   var ch = await chunksOf(meta.id), gps = [], imu = [];
   ch.forEach(function(c){ gps = gps.concat(c.gps); imu = imu.concat(c.imu); });
-  var body = JSON.stringify({ format:'heeltoe-rec', v:1, startedAt:meta.startedAt, device:navigator.userAgent.slice(0,120), gps:gps, imu:imu });
+  var o = { format:'heeltoe-rec', v:1, startedAt:meta.startedAt, device:navigator.userAgent.slice(0,120), gps:gps, imu:imu }; if (meta.roads) o.roads = meta.roads;
+  var body = JSON.stringify(o);
   return new File([body], fname(meta.startedAt), { type:'application/json' });
 }
+var noMap = {}; // recordings whose road map download failed this session: save them without it
 async function exportRec(meta){
   try {
+    // Safari only opens the share sheet straight after a tap, so a slow map download
+    // can't come before it. Fetch the map, then ask for a second tap to save.
+    if (!meta.roads && !noMap[meta.id] && navigator.onLine) {
+      msg('Adding the road map\u2026');
+      meta = await addRoads(meta);
+      if (!meta.roads) noMap[meta.id] = true;
+      renderList();
+      msg(meta.roads ? 'Road map added. Tap \u201cSave file\u201d again to save it.' : 'Couldn\u2019t get the road map right now. Tap \u201cSave file\u201d again to save without it.');
+      return;
+    }
     var f = await buildFile(meta);
     if (navigator.canShare && navigator.canShare({ files:[f] })) { try { await navigator.share({ files:[f], title:f.name }); return; } catch(e) { if (e && e.name === 'AbortError') return; } }
     var a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
@@ -211,7 +262,7 @@ async function renderList(){
     var it = document.createElement('div'); it.className = 'item';
     var info = document.createElement('div');
     var t = document.createElement('div'); t.textContent = d.toLocaleDateString(undefined, { day:'numeric', month:'short' }) + ', ' + d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
-    var s = document.createElement('div'); s.className = 'small mute'; s.textContent = mins + ' min · ' + m.fixes + ' GPS fixes' + (m.motion ? ' · motion' : ' · GPS only') + (m.gaps ? ' · ' + m.gaps + ' gap' + (m.gaps > 1 ? 's' : '') : '');
+    var s = document.createElement('div'); s.className = 'small mute'; s.textContent = mins + ' min · ' + m.fixes + ' GPS fixes' + (m.motion ? ' · motion' : ' · GPS only') + (m.gaps ? ' · ' + m.gaps + ' gap' + (m.gaps > 1 ? 's' : '') : '') + (m.roads ? ' · road map' : '');
     info.appendChild(t); info.appendChild(s);
     var acts = document.createElement('div'); acts.className = 'acts';
     var sv = document.createElement('button'); sv.className = 'btn primary'; sv.textContent = 'Save file'; sv.onclick = function(){ exportRec(m); };
