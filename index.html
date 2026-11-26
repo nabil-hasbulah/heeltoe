@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0E1216">
+<title>Heel &amp; Toe Recorder</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Calm, dark, one-screen recorder. Nothing to read while driving. */
+:root{--bg:#0E1216;--panel:#161C22;--sunk:#0B0E12;--ink:#E6EAEE;--mute:#8D98A4;--line:#26303A;--accent:#F3C316;--accent-ink:#141A21;--good:#3CC4A5;--bad:#F06A6E;
+--f-disp:"Chakra Petch","Arial Narrow",system-ui,sans-serif;--f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--f-body);-webkit-text-size-adjust:100%}
+body{padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;gap:16px;padding-block:16px 24px}
+h1,h2{font-family:var(--f-disp);margin:0;line-height:1.1}
+h1{font-size:24px}h2{font-size:18px}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+.brand{display:flex;gap:10px;align-items:center}
+.brand svg{width:28px;height:28px}
+.mute{color:var(--mute)}.small{font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.status{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.st{display:flex;gap:8px;align-items:center;font-size:14px}
+.st i{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
+.st i.ok{background:var(--good)}.st i.bad{background:var(--bad)}
+.big{width:100%;border:0;border-radius:16px;padding:26px 16px;font:700 26px var(--f-disp);letter-spacing:.02em}
+.go{background:var(--accent);color:var(--accent-ink)}
+.stop{background:var(--panel);border:2px solid var(--bad);color:var(--ink);position:relative;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+.stop .fill{position:absolute;inset:0;background:var(--bad);transform-origin:left;transform:scaleX(0)}
+.stop span{position:relative}
+.rec{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;min-height:300px}
+.dot{width:84px;height:84px;border-radius:50%;background:var(--bad);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.clock{font:700 44px var(--f-disp);font-variant-numeric:tabular-nums}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 13px;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.danger{color:var(--bad);background:none}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.item:first-child{border-top:0}
+.item .acts{display:flex;gap:8px}
+.warn{border:1px solid var(--bad);border-radius:10px;padding:10px 12px;font-size:14px}
+.msg{font-size:14px;min-height:1.4em}
+ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--mute)}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="7" fill="#F3C316"/><path d="M9 21c3 0 4-10 7-10s4 10 7 10" fill="none" stroke="#141A21" stroke-width="2.6" stroke-linecap="round"/></svg>
+    <div><h1>Heel &amp; Toe Recorder</h1><p class="small mute">Logs GPS and motion for the analyzer</p></div>
+  </div>
+
+  <section id="ready" class="wrap" style="padding:0">
+    <div class="card status" aria-live="polite">
+      <div class="st"><i id="gpsDot"></i><span id="gpsTxt">GPS not started</span></div>
+      <div class="st"><i id="imuDot"></i><span id="imuTxt">Motion not started</span></div>
+    </div>
+    <button id="start" class="big go" type="button">Start recording</button>
+    <p class="msg" id="msg" role="status"></p>
+    <div class="card">
+      <h2 style="margin-bottom:8px">Before you go</h2>
+      <ol>
+        <li>Mount the phone firmly. It can face any way, as long as it can’t move.</li>
+        <li>Start while parked. Keep this screen open and on until you stop.</li>
+        <li>Don’t touch the phone while driving. Stop once you’ve parked.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:6px">Recordings</h2>
+      <p class="small mute" style="margin-bottom:6px">Saved on this phone. Save a file, then import it in the Heel &amp; Toe app in Claude.</p>
+      <div id="list"></div>
+    </div>
+  </section>
+
+  <section id="recording" class="wrap" style="padding:0" hidden>
+    <div class="rec">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="clock" id="clock">0:00</div>
+      <p class="mute" id="recInfo">Recording. Eyes on the road.</p>
+      <p class="warn" id="gapWarn" hidden>The screen turned off for a while, so part of the drive is missing. Keep this screen on.</p>
+    </div>
+    <button id="stop" class="big stop" type="button" aria-label="Press and hold to stop recording"><div class="fill" id="fill"></div><span id="stopTxt">Hold to stop</span></button>
+  </section>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var DBN = 'heeltoe-rec', db = null;
+function openDB(){ return new Promise(function(res, rej){ var r = indexedDB.open(DBN, 1); r.onupgradeneeded = function(){ var d = r.result; d.createObjectStore('recs', { keyPath:'id' }); var c = d.createObjectStore('chunks', { keyPath:['rec','n'] }); c.createIndex('rec', 'rec'); }; r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); }; }); }
+function tx(store, mode, fn){ return new Promise(function(res, rej){ var t = db.transaction(store, mode), out = fn(t); t.oncomplete = function(){ res(out && out.result !== undefined ? out.result : out); }; t.onerror = function(){ rej(t.error); }; }); }
+function getAll(store){ return new Promise(function(res, rej){ var r = db.transaction(store).objectStore(store).getAll(); r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); }; }); }
+function chunksOf(id){ return new Promise(function(res, rej){ var r = db.transaction('chunks').objectStore('chunks').index('rec').getAll(id); r.onsuccess = function(){ res(r.result.sort(function(a,b){ return a.n - b.n; })); }; r.onerror = function(){ rej(r.error); }; }); }
+
+var R = null, watch = null, wake = null, tick = null, flushT = null;
+var BIN = 40; // ms, 25 Hz motion
+function msg(t){ $('msg').textContent = t; }
+function setSt(which, ok, txt){ $(which + 'Dot').className = ok == null ? '' : ok ? 'ok' : 'bad'; $(which + 'Txt').textContent = txt; }
+
+function onMotion(e){
+  if (!R) return; var a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
+  var t = Date.now() - R.startedAt, b = Math.floor(t / BIN);
+  if (R.bin !== b) { if (R.bn) R.imu.push([R.bin * BIN + BIN/2, +(R.bx/R.bn).toFixed(3), +(R.by/R.bn).toFixed(3), +(R.bz/R.bn).toFixed(3)]); R.bin = b; R.bx = R.by = R.bz = 0; R.bn = 0; }
+  R.bx += a.x; R.by += a.y; R.bz += a.z; R.bn++; R.imuCount++;
+}
+function onPos(p){
+  if (!R) return; var c = p.coords;
+  R.gps.push([Math.max(0, Math.round(p.timestamp - R.startedAt)), +c.latitude.toFixed(6), +c.longitude.toFixed(6), c.speed != null && c.speed >= 0 ? +c.speed.toFixed(2) : null, c.heading != null && !isNaN(c.heading) ? Math.round(c.heading) : null, c.accuracy != null ? Math.round(c.accuracy) : null, c.altitude != null ? +c.altitude.toFixed(1) : null]);
+  R.fixes++; R.lastAcc = c.accuracy;
+}
+function onGpsErr(e){
+  if (e.code === 1) { msg('Location is blocked. Allow location for this site in your browser settings, then try again.'); abort(); }
+  else if (R) $('recInfo').textContent = 'Waiting for GPS signal…';
+}
+async function flush(){
+  if (!R) return; var g = R.gps.splice(0), m = R.imu.splice(0); if (!g.length && !m.length) return;
+  var n = R.chunk++;
+  try { await tx(['chunks','recs'], 'readwrite', function(t){ t.objectStore('chunks').put({ rec:R.id, n:n, gps:g, imu:m }); t.objectStore('recs').put(R.meta()); }); }
+  catch(e) { msg('Couldn’t save to this phone’s storage. Free up space.'); }
+}
+async function start(){
+  msg('');
+  if (!navigator.geolocation) { msg('This browser can’t use GPS.'); return; }
+  // iOS needs motion permission requested inside the tap
+  var motionOk = true;
+  try { if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') motionOk = (await DeviceMotionEvent.requestPermission()) === 'granted'; } catch(e) { motionOk = false; }
+  var now = Date.now();
+  R = { id:'r' + now, startedAt:now, gps:[], imu:[], chunk:0, fixes:0, imuCount:0, bin:null, bx:0, by:0, bz:0, bn:0, lastAcc:null, hiddenAt:null, gaps:0,
+    meta:function(){ return { id:this.id, startedAt:this.startedAt, endedAt:Date.now(), fixes:this.fixes, motion:this.imuCount > 0, gaps:this.gaps }; } };
+  if (motionOk) window.addEventListener('devicemotion', onMotion);
+  watch = navigator.geolocation.watchPosition(onPos, onGpsErr, { enableHighAccuracy:true, maximumAge:0, timeout:30000 });
+  try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch(e) {}
+  $('ready').hidden = true; $('recording').hidden = false; $('gapWarn').hidden = true;
+  $('recInfo').textContent = motionOk ? 'Recording. Eyes on the road.' : 'Recording GPS only: motion access was refused.';
+  tick = setInterval(function(){
+    var s = Math.floor((Date.now() - R.startedAt)/1000); $('clock').textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+    if (!R.fixes && s > 5) $('recInfo').textContent = 'Waiting for GPS signal…';
+    else if (R.fixes && /Waiting/.test($('recInfo').textContent)) $('recInfo').textContent = 'Recording. Eyes on the road.';
+  }, 500);
+  flushT = setInterval(flush, 10000);
+}
+function cleanup(){
+  window.removeEventListener('devicemotion', onMotion);
+  if (watch != null) navigator.geolocation.clearWatch(watch); watch = null;
+  clearInterval(tick); clearInterval(flushT);
+  try { if (wake) wake.release(); } catch(e) {} wake = null;
+}
+function abort(){ cleanup(); R = null; $('ready').hidden = false; $('recording').hidden = true; }
+async function stop(){
+  if (!R) return; var r = R; cleanup();
+  if (r.bn) r.imu.push([r.bin * BIN + BIN/2, +(r.bx/r.bn).toFixed(3), +(r.by/r.bn).toFixed(3), +(r.bz/r.bn).toFixed(3)]);
+  await flush(); R = null;
+  $('ready').hidden = false; $('recording').hidden = true;
+  msg(r.fixes < 20 ? 'Stopped. Very little GPS data was recorded, so this one may not import.' : 'Saved on this phone. Tap “Save file” below to export it.');
+  renderList();
+}
+document.addEventListener('visibilitychange', async function(){
+  if (!R) return;
+  if (document.hidden) R.hiddenAt = Date.now();
+  else { if (R.hiddenAt && Date.now() - R.hiddenAt > 3000) { R.gaps++; $('gapWarn').hidden = false; } R.hiddenAt = null; try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch(e) {} }
+});
+
+// hold-to-stop so a bump can't end the recording
+(function(){
+  var b = $('stop'), t0 = 0, raf = 0, HOLD = 1200;
+  function frame(){ var f = Math.min(1, (performance.now() - t0)/HOLD); $('fill').style.transform = 'scaleX(' + f + ')'; if (f >= 1) { end(); stop(); return; } raf = requestAnimationFrame(frame); }
+  function begin(e){ e.preventDefault(); t0 = performance.now(); $('stopTxt').textContent = 'Keep holding…'; raf = requestAnimationFrame(frame); }
+  function end(){ cancelAnimationFrame(raf); $('fill').style.transform = 'scaleX(0)'; $('stopTxt').textContent = 'Hold to stop'; }
+  b.addEventListener('pointerdown', begin); b.addEventListener('pointerup', end); b.addEventListener('pointerleave', end); b.addEventListener('pointercancel', end);
+  b.addEventListener('keydown', function(e){ if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) begin(e); });
+  b.addEventListener('keyup', end);
+})();
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function fname(ms){ var d = new Date(ms); return 'heeltoe-' + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + '.json'; }
+async function buildFile(meta){
+  var ch = await chunksOf(meta.id), gps = [], imu = [];
+  ch.forEach(function(c){ gps = gps.concat(c.gps); imu = imu.concat(c.imu); });
+  var body = JSON.stringify({ format:'heeltoe-rec', v:1, startedAt:meta.startedAt, device:navigator.userAgent.slice(0,120), gps:gps, imu:imu });
+  return new File([body], fname(meta.startedAt), { type:'application/json' });
+}
+async function exportRec(meta){
+  try {
+    var f = await buildFile(meta);
+    if (navigator.canShare && navigator.canShare({ files:[f] })) { try { await navigator.share({ files:[f], title:f.name }); return; } catch(e) { if (e && e.name === 'AbortError') return; } }
+    var a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+  } catch(e) { msg('Couldn’t build the file. Try again.'); }
+}
+async function delRec(meta){
+  var ch = await chunksOf(meta.id);
+  await tx(['chunks','recs'], 'readwrite', function(t){ ch.forEach(function(c){ t.objectStore('chunks').delete([c.rec, c.n]); }); t.objectStore('recs').delete(meta.id); });
+  renderList();
+}
+async function renderList(){
+  var box = $('list'); box.textContent = '';
+  var recs = []; try { recs = await getAll('recs'); } catch(e) {}
+  recs.sort(function(a,b){ return b.startedAt - a.startedAt; });
+  if (!recs.length) { var p = document.createElement('p'); p.className = 'small mute'; p.textContent = 'No recordings yet.'; box.appendChild(p); return; }
+  recs.forEach(function(m){
+    var d = new Date(m.startedAt), mins = Math.max(1, Math.round((m.endedAt - m.startedAt)/60000));
+    var it = document.createElement('div'); it.className = 'item';
+    var info = document.createElement('div');
+    var t = document.createElement('div'); t.textContent = d.toLocaleDateString(undefined, { day:'numeric', month:'short' }) + ', ' + d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+    var s = document.createElement('div'); s.className = 'small mute'; s.textContent = mins + ' min · ' + m.fixes + ' GPS fixes' + (m.motion ? ' · motion' : ' · GPS only') + (m.gaps ? ' · ' + m.gaps + ' gap' + (m.gaps > 1 ? 's' : '') : '');
+    info.appendChild(t); info.appendChild(s);
+    var acts = document.createElement('div'); acts.className = 'acts';
+    var sv = document.createElement('button'); sv.className = 'btn primary'; sv.textContent = 'Save file'; sv.onclick = function(){ exportRec(m); };
+    var dl = document.createElement('button'); dl.className = 'btn danger'; dl.textContent = 'Delete';
+    dl.onclick = function(){ if (dl.dataset.armed) { delRec(m); return; } dl.dataset.armed = '1'; dl.textContent = 'Tap again'; };
+    acts.appendChild(sv); acts.appendChild(dl); it.appendChild(info); it.appendChild(acts); box.appendChild(it);
+  });
+}
+
+// pre-flight status
+function probe(){
+  if (!window.isSecureContext) { setSt('gps', false, 'Needs an https:// link'); setSt('imu', false, 'Needs an https:// link'); $('start').disabled = true; msg('Open this page from its https:// address (for example GitHub Pages). Phones block GPS on plain files.'); return; }
+  setSt('gps', null, navigator.geolocation ? 'GPS asks on start' : 'No GPS in this browser');
+  setSt('imu', null, window.DeviceMotionEvent ? 'Motion asks on start' : 'No motion sensor access');
+  if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name:'geolocation' }).then(function(p){ if (p.state === 'granted') setSt('gps', true, 'GPS allowed'); else if (p.state === 'denied') setSt('gps', false, 'GPS blocked'); }).catch(function(){});
+}
+$('start').addEventListener('click', start);
+openDB().then(function(d){ db = d; renderList(); }).catch(function(){ msg('This browser won’t let the recorder save data. Try Safari or Chrome, not a private window.'); $('start').disabled = true; });
+probe();
+})();
+</script>
+</body>
+</html>

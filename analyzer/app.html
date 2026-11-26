@@ -1,0 +1,800 @@
+<title>Heel &amp; Toe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one portrait column, instrument-panel cards, fixed tab bar at the bottom. */
+:root{
+  --bg:#ECEFF2; --panel:#FFFFFF; --sunk:#E2E6EB; --ink:#141A21; --mute:#5C6773; --line:#D3D9E0;
+  --accent:#9A7300; --accent-ink:#141A21; --accent-fill:#F3C316;
+  --lat:#2F6FD6; --lon:#C2541B; --good:#14876F; --mid:#B07A00; --bad:#C93A3F;
+  --r0:#1F9E8F; --r1:#E8B92A; --r2:#E0503F;
+  --f-disp:"Chakra Petch","Arial Narrow",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1216; --panel:#161C22; --sunk:#0B0E12; --ink:#E6EAEE; --mute:#8D98A4; --line:#26303A;
+  --accent:#F3C316; --accent-ink:#141A21; --accent-fill:#F3C316;
+  --lat:#6EA2F5; --lon:#F08A4B; --good:#3CC4A5; --mid:#E8B92A; --bad:#F06A6E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1216; --panel:#161C22; --sunk:#0B0E12; --ink:#E6EAEE; --mute:#8D98A4; --line:#26303A;
+  --accent:#F3C316; --accent-ink:#141A21; --accent-fill:#F3C316;
+  --lat:#6EA2F5; --lon:#F08A4B; --good:#3CC4A5; --mid:#E8B92A; --bad:#F06A6E; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font:400 15px/1.5 var(--f-body);-webkit-text-size-adjust:100%}
+main{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px calc(96px + env(safe-area-inset-bottom,0px))}
+h1,h2,h3{font-family:var(--f-disp);margin:0;line-height:1.1;text-wrap:balance}
+h1{font-size:28px;font-weight:700;letter-spacing:.01em}
+h2{font-size:20px;font-weight:600;margin:0 0 10px}
+h3{font-size:16px;font-weight:600}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0 14px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:30px;height:30px;flex:none}
+.brand small{display:block;color:var(--mute);font-size:12px;font-family:var(--f-body)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;align-items:center}
+.mute{color:var(--mute)}
+.small{font-size:13px}
+.eyebrow{font:600 11px var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.num{font-family:var(--f-disp);font-variant-numeric:tabular-nums}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:10px 14px;font-weight:500}
+.btn.primary{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--accent-ink);font-weight:600}
+.btn.ghost{background:none}
+.btn.danger{color:var(--bad)}
+.btn.block{width:100%}
+.link{background:none;border:0;padding:0;color:var(--accent);font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 11px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.banner{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--mute)}
+.banner b{color:var(--ink)}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mute)}
+label.f input,label.f select,label.f textarea{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--ink);min-width:0;width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+
+/* tab bar */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--panel);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+nav.tabs .in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+nav.tabs button{background:none;border:0;border-radius:8px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mute)}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button[aria-current="page"]{color:var(--ink)}
+nav.tabs button[aria-current="page"] svg{color:var(--accent)}
+
+/* drives list */
+.drive{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;text-align:left;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px}
+.drive canvas{width:64px;height:64px;border-radius:8px;background:var(--sunk)}
+.drive .t{font-family:var(--f-disp);font-size:17px;font-weight:600;line-height:1.2}
+.drive .m{font-size:13px;color:var(--mute)}
+.tag{display:inline-block;font:600 10px var(--f-body);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--mute);vertical-align:2px;margin-left:4px}
+.ring{position:relative;width:52px;height:52px}
+.ring svg{width:52px;height:52px;transform:rotate(-90deg)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font:700 17px var(--f-disp)}
+.ring.big{width:104px;height:104px}.ring.big svg{width:104px;height:104px}.ring.big b{font-size:36px}
+
+/* drive detail */
+.back{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:4px 0;color:var(--mute);font-size:14px}
+.hdr .t{font-family:var(--f-disp);font-size:26px;font-weight:700;line-height:1.15}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.stats div{display:flex;flex-direction:column}
+.stats b{font:600 19px var(--f-disp);font-variant-numeric:tabular-nums}
+.stats span{font-size:11px;color:var(--mute)}
+.scoreTop{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.subs{display:flex;flex-direction:column;gap:9px}
+.sub{display:grid;grid-template-columns:82px 1fr 28px;gap:8px;align-items:center;font-size:13px;background:none;border:0;padding:0;text-align:left;width:100%}
+.bar{height:8px;border-radius:4px;background:var(--sunk);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px}
+.sub b{font:600 14px var(--f-disp);text-align:right;font-variant-numeric:tabular-nums}
+.subnote{font-size:13px;color:var(--mute);margin-top:10px;min-height:1.5em}
+.note{display:grid;grid-template-columns:10px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.note:first-of-type{border-top:0;padding-top:2px}
+.note i{width:10px;height:10px;border-radius:2px;margin-top:6px}
+.note h3{font-size:15px;margin-bottom:2px}
+.note p{font-size:14px;color:var(--mute)}
+.debrief{white-space:pre-wrap;font-size:14px;margin-top:10px}
+.cvs{width:100%;display:block;touch-action:none;border-radius:8px;background:var(--sunk)}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute);margin-top:8px}
+.legend .ramp{flex:1;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--r0),var(--r1),var(--r2))}
+.readout{font:500 12px var(--f-mono);color:var(--mute);min-height:1.6em;margin-bottom:6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.keys{display:flex;gap:14px;font-size:12px;color:var(--mute);margin-top:6px;flex-wrap:wrap}
+.keys span::before{content:"";display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px;background:currentColor}
+.secHead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}
+.secHead h2{margin:0}
+.corner{border-top:1px solid var(--line)}
+.corner:first-child{border-top:0}
+.corner>button{width:100%;display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;background:none;border:0;padding:10px 0;text-align:left}
+.corner .no{font:700 15px var(--f-disp);width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line)}
+.corner[aria-selected="true"] .no{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--accent-ink)}
+.corner .m{font-size:13px;color:var(--mute)}
+.pill{font:600 13px var(--f-disp);padding:2px 8px;border-radius:999px;color:#fff;font-variant-numeric:tabular-nums}
+.cdet{padding:0 0 14px 44px;display:flex;flex-direction:column;gap:10px}
+.mtab{display:grid;grid-template-columns:1fr auto auto;gap:4px 12px;font-size:13px;align-items:baseline}
+.mtab .v{font:500 13px var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:22px 14px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.drop.over{border-color:var(--accent)}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.steps li::marker{font-family:var(--f-disp);font-weight:700;color:var(--accent)}
+.err{color:var(--bad);font-size:14px}
+.car{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.car:first-child{border-top:0}
+.trend{width:100%;height:auto;display:block}
+@media (max-width:420px){.stats{grid-template-columns:repeat(2,1fr)}.ring.big{width:88px;height:88px}.ring.big svg{width:88px;height:88px}.ring.big b{font-size:30px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<main id="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="7" fill="var(--accent-fill)"/><path d="M9 21c3 0 4-10 7-10s4 10 7 10" fill="none" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round"/></svg>
+      <div><h1>Heel &amp; Toe</h1><small>Drive data for smoother hands and feet</small></div>
+    </div>
+  </header>
+  <div id="view"></div>
+</main>
+
+<nav class="tabs" aria-label="Sections"><div class="in">
+  <button data-tab="drives"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 18c3 0 3-6 6-6s3 6 6 6 3-8 4-12"/></svg>Drives</button>
+  <button data-tab="import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Import</button>
+  <button data-tab="garage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15l2-5c.4-1 1.2-2 2.6-2h6.8c1.4 0 2.2 1 2.6 2l2 5v3H4z"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg>Garage</button>
+  <button data-tab="record"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><circle cx="12" cy="10" r="2.4" fill="currentColor"/></svg>Recorder</button>
+</div></nav>
+
+<script>
+/*PROC*/
+</script>
+<script>
+(function(){
+'use strict';
+var $ = function(s, r){ return (r||document).querySelector(s); };
+function h(tag, attrs, kids){
+  var el = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    var v = attrs[k]; if (v == null || v === false) continue;
+    if (k === 'class') el.className = v; else if (k === 'text') el.textContent = v;
+    else if (k.slice(0,2) === 'on') el.addEventListener(k.slice(2), v);
+    else if (k === 'style') el.style.cssText = v; else el.setAttribute(k, v === true ? '' : v);
+  }
+  (kids || []).forEach(function(c){ if (c == null || c === false) return; el.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c); });
+  return el;
+}
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function gradeColor(s){ return s == null ? cssVar('--mute') : s >= 75 ? cssVar('--good') : s >= 50 ? cssVar('--mid') : cssVar('--bad'); }
+function fmtDate(ms){ return new Date(ms).toLocaleDateString('en-MY', { day:'numeric', month:'short', year:'numeric' }); }
+function fmtTime(ms){ return new Date(ms).toLocaleTimeString('en-MY', { hour:'2-digit', minute:'2-digit' }); }
+function fmtDur(s){ var m = Math.floor(s/60), h0 = Math.floor(m/60); return h0 ? h0 + 'h ' + (m%60) + 'm' : m + ' min'; }
+function km(m){ return (m/1000).toFixed(m < 10000 ? 1 : 0); }
+function ramp(f){ // teal -> yellow -> red
+  var a = [cssVar('--r0'), cssVar('--r1'), cssVar('--r2')].map(hex);
+  f = Math.max(0, Math.min(1, f)); var i = f < .5 ? 0 : 1, t = f < .5 ? f*2 : (f-.5)*2, p = a[i], q = a[i+1];
+  return 'rgb(' + [0,1,2].map(function(k){ return Math.round(p[k] + (q[k]-p[k])*t); }).join(',') + ')';
+}
+function hex(c){ c = c.replace('#',''); return [parseInt(c.slice(0,2),16), parseInt(c.slice(2,4),16), parseInt(c.slice(4,6),16)]; }
+
+/* ---------------- state + storage ---------------- */
+var S = { tab:'drives', drives:[], cars:[], settings:{}, loaded:false, store:null, uid:null, open:null, example:null, traceCache:{}, dbNote:'' };
+var db = null, base = null;
+var CHUNK = 4000;
+
+async function initStore(){
+  try {
+    db = await claude.use('db'); var user = await claude.use('user');
+    if (db && user) { S.uid = await user.id(); if (S.uid) base = 'data/users/' + S.uid + '/ht'; }
+  } catch(e) { db = null; }
+  if (!db || !base) { S.loaded = true; S.dbNote = 'Saving isn’t available in this view, so imported drives last only until you close the page.'; render(); return; }
+  var timer = setTimeout(function(){ if (!S.loaded) { S.dbNote = 'Your saved drives can’t be reached yet. Check your connection.'; S.loaded = true; render(); } }, 10000);
+  db.collection(base + '/drives').onSnapshot(function(snap){
+    S.drives = snap.docs.map(function(d){ return d.data(); }).sort(function(a,b){ return b.date - a.date; });
+    if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(timer); S.dbNote = ''; }
+    S.loaded = true;
+    if (S.open && !S.open.example) { var f = S.drives.filter(function(d){ return d.id === S.open.id; })[0]; if (f) S.open.meta = f; }
+    renderSoft();
+  }, function(){ clearTimeout(timer); S.loaded = true; S.dbNote = 'Your saved drives couldn’t be loaded. Reopen the page to try again.'; render(); });
+  db.collection(base + '/cars').onSnapshot(function(snap){
+    S.cars = snap.docs.map(function(d){ var o = d.data(); o.id = d.id; return o; }).sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+    renderSoft();
+  }, function(){});
+  db.doc(base + '/meta/settings').onSnapshot(function(s){ S.settings = s.exists ? s.data() : {}; renderSoft(); }, function(){});
+}
+// re-render only views that depend on list data, so an open drive keeps its canvases
+function renderSoft(){
+  if (S.tab === 'drives') { if (S.open) refreshDriveHeader(); else render(); }
+  else if (S.tab === 'garage') { if (!GE) render(); }
+  else if (S.tab === 'import') { if (!IMP.res && !IMP.busy) render(); }
+  else if (!$('#view').contains(document.activeElement)) render();
+}
+
+async function saveDrive(res, form){
+  var id = 'd' + res.startedAt.toString(36) + Math.random().toString(36).slice(2,6);
+  var cols = HT.pack(res), n = cols.x.length, parts = Math.ceil(n / CHUNK);
+  var thumb = []; var st = Math.max(1, Math.floor(n/80));
+  var xs = cols.x, ys = cols.y, x0 = Math.min.apply(null,xs), x1 = Math.max.apply(null,xs), y0 = Math.min.apply(null,ys), y1 = Math.max.apply(null,ys), sc = Math.max(x1-x0, y1-y0) || 1;
+  for (var i = 0; i < n; i += st) thumb.push(Math.round((xs[i]-x0)/sc*100), Math.round((ys[i]-y0)/sc*100));
+  var meta = { id:id, road:form.road, carId:form.carId || '', car:form.car || '', surface:form.surface, notes:form.notes, feel:form.feel || null,
+    date:res.startedAt, source:res.source, imu:res.imu, summary:res.summary, scores:res.scores, origin:res.origin,
+    corners:res.corners.slice(0, 400).map(HT.slimCorner), n:n, parts:parts, thumb:thumb, createdAt:Date.now() };
+  if (!db || !base) { S.drives.unshift(meta); S.traceCache[id] = cols; return meta; }
+  for (var p = 0; p < parts; p++) {
+    var sl = {}; for (var k in cols) sl[k] = cols[k].slice(p*CHUNK, (p+1)*CHUNK);
+    await db.collection(base + '/traces').doc(id + '_' + p).set(sl);
+  }
+  await db.collection(base + '/drives').doc(id).set(meta);
+  S.traceCache[id] = cols;
+  return meta;
+}
+async function loadTrace(meta){
+  if (S.traceCache[meta.id]) return S.traceCache[meta.id];
+  var cols = { x:[], y:[], v:[], lat:[], lon:[], j:[] };
+  for (var p = 0; p < meta.parts; p++) {
+    var s = await db.collection(base + '/traces').doc(meta.id + '_' + p).get();
+    if (!s.exists) throw new Error('Part of this drive’s data is missing.');
+    var d = s.data(); for (var k in cols) cols[k] = cols[k].concat(d[k] || []);
+  }
+  S.traceCache[meta.id] = cols; return cols;
+}
+async function deleteDrive(meta){
+  if (!db || !base) { S.drives = S.drives.filter(function(d){ return d.id !== meta.id; }); return; }
+  for (var p = 0; p < meta.parts; p++) await db.collection(base + '/traces').doc(meta.id + '_' + p).delete();
+  await db.collection(base + '/drives').doc(meta.id).delete();
+}
+async function updateDrive(meta, patch){
+  Object.assign(meta, patch);
+  if (db && base) await db.collection(base + '/drives').doc(meta.id).update(patch);
+}
+
+/* ---------------- example drive (computed, never saved) ---------------- */
+function getExample(){
+  if (S.example) return S.example;
+  var res = HT.process(HT.parseRecording(HT.synth({})));
+  var cols = HT.pack(res);
+  var meta = { id:'example', example:true, road:'Example: hill road', car:'Example car', surface:'Dry', notes:'', date:res.startedAt, source:'example', imu:res.imu, summary:res.summary, scores:res.scores, origin:res.origin, corners:res.corners.map(HT.slimCorner), n:cols.x.length, parts:1, thumb:null };
+  S.traceCache.example = cols; S.example = meta; return meta;
+}
+
+/* ---------------- shared widgets ---------------- */
+function ring(score, big){
+  var r = 21, C = 2*Math.PI*r, f = score == null ? 0 : score/100;
+  var wrap = h('div', { class:'ring' + (big ? ' big' : ''), role:'img', 'aria-label':'Smoothness score ' + (score == null ? 'not available' : score + ' out of 100') });
+  wrap.innerHTML = '<svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="' + r + '" fill="none" stroke="var(--sunk)" stroke-width="5"/><circle cx="26" cy="26" r="' + r + '" fill="none" stroke="' + gradeColor(score) + '" stroke-width="5" stroke-linecap="round" stroke-dasharray="' + (C*f).toFixed(1) + ' ' + C.toFixed(1) + '"/></svg>';
+  wrap.appendChild(h('b', { text: score == null ? '–' : score }));
+  return wrap;
+}
+function setupCanvas(c, cssH){
+  var dpr = Math.min(window.devicePixelRatio || 1, 3), w = c.clientWidth || 300, hh = cssH || c.clientHeight || 200;
+  c.width = Math.round(w*dpr); c.height = Math.round(hh*dpr); c.style.height = hh + 'px';
+  var g = c.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); return { g:g, w:w, h:hh };
+}
+function drawThumb(c, thumb){
+  var o = setupCanvas(c, 64), g = o.g; if (!thumb || thumb.length < 4) return;
+  var pad = 8, s = (64 - 2*pad)/100;
+  g.strokeStyle = cssVar('--accent'); g.lineWidth = 2; g.lineJoin = 'round'; g.beginPath();
+  for (var i = 0; i < thumb.length; i += 2) { var x = pad + thumb[i]*s, y = 64 - pad - thumb[i+1]*s; i ? g.lineTo(x,y) : g.moveTo(x,y); }
+  g.stroke();
+}
+
+/* ---------------- views ---------------- */
+function render(){
+  document.querySelectorAll('nav.tabs button').forEach(function(b){ b.setAttribute('aria-current', b.dataset.tab === S.tab ? 'page' : 'false'); });
+  var v = $('#view'); v.textContent = '';
+  if (S.tab === 'drives') { if (S.open) v.appendChild(viewDrive()); else v.appendChild(viewDrives()); }
+  else if (S.tab === 'import') v.appendChild(viewImport());
+  else if (S.tab === 'garage') v.appendChild(viewGarage());
+  else v.appendChild(viewRecorder());
+}
+document.querySelectorAll('nav.tabs button').forEach(function(b){ b.addEventListener('click', function(){
+  if (b.dataset.tab === 'drives' && S.tab === 'drives' && S.open) S.open = null;
+  S.tab = b.dataset.tab; render(); window.scrollTo(0,0);
+}); });
+
+function viewDrives(){
+  var box = h('div', { class:'stack' });
+  if (S.dbNote) box.appendChild(h('div', { class:'banner', text:S.dbNote }));
+  if (!S.loaded) { box.appendChild(h('p', { class:'mute', text:'Loading your drives…' })); return box; }
+  var list = S.drives.slice();
+  if (list.length >= 2) box.appendChild(trendCard(list));
+  if (!list.length) {
+    box.appendChild(h('div', { class:'card stack' }, [
+      h('h2', { text:'No drives yet' }),
+      h('p', { class:'mute', text:'Record a drive with the phone recorder, or import a GPX track from any app. Heel & Toe scores how smoothly you brake, turn in and get back on the power, corner by corner.' }),
+      h('div', { class:'row' }, [ h('button', { class:'btn primary', text:'Import a drive', onclick:function(){ S.tab='import'; render(); } }), h('button', { class:'btn', text:'Set up recorder', onclick:function(){ S.tab='record'; render(); } }) ])
+    ]));
+    box.appendChild(h('p', { class:'eyebrow', text:'See what an analysis looks like' }));
+    box.appendChild(driveRow(getExample()));
+    return box;
+  }
+  box.appendChild(h('p', { class:'eyebrow', text: list.length + (list.length === 1 ? ' drive' : ' drives') }));
+  list.forEach(function(d){ box.appendChild(driveRow(d)); });
+  return box;
+}
+function driveRow(d){
+  var c = h('canvas', { 'aria-hidden':'true' });
+  var b = h('button', { class:'drive', onclick:function(){ openDrive(d); } }, [
+    c,
+    h('div', { style:'min-width:0' }, [
+      h('div', { class:'t' }, [ d.road, d.example ? h('span', { class:'tag', text:'Example' }) : null ]),
+      h('div', { class:'m', text: fmtDate(d.date) + ' · ' + km(d.summary.dist) + ' km · ' + d.corners.length + ' corners' }),
+      h('div', { class:'m', text: [d.car, d.surface].filter(Boolean).join(' · ') })
+    ]),
+    ring(d.scores.overall)
+  ]);
+  requestAnimationFrame(function(){
+    if (d.thumb) drawThumb(c, d.thumb);
+    else { var t = S.traceCache[d.id]; if (t) { var th = [], x0 = Math.min.apply(null,t.x), y0 = Math.min.apply(null,t.y), sc = Math.max(Math.max.apply(null,t.x)-x0, Math.max.apply(null,t.y)-y0)||1; for (var i = 0; i < t.x.length; i += 10) th.push((t.x[i]-x0)/sc*100, (t.y[i]-y0)/sc*100); drawThumb(c, th); } }
+  });
+  return b;
+}
+function trendCard(list){
+  var pts = list.filter(function(d){ return d.scores.overall != null; }).slice().sort(function(a,b){ return a.date - b.date; });
+  var card = h('div', { class:'card' });
+  if (pts.length < 2) return h('div');
+  var last = pts[pts.length-1], first = pts[0];
+  card.appendChild(h('div', { class:'secHead' }, [ h('h2', { text:'Smoothness trend' }), h('span', { class:'small mute', text: pts.length + ' drives' }) ]));
+  var W = 600, H = 150, pl = 30, pr = 10, pt = 10, pb = 22;
+  var X = function(i){ return pts.length < 2 ? (pl + W - pr)/2 : pl + i*(W-pl-pr)/(pts.length-1); }, Y = function(s){ return pt + (100-s)*(H-pt-pb)/100; };
+  var svg = '<svg class="trend" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Overall smoothness score per drive, from ' + first.scores.overall + ' to ' + last.scores.overall + '">';
+  [0,50,100].forEach(function(s){ svg += '<line x1="' + pl + '" x2="' + (W-pr) + '" y1="' + Y(s) + '" y2="' + Y(s) + '" stroke="var(--line)"/><text x="' + (pl-6) + '" y="' + (Y(s)+4) + '" text-anchor="end" font-size="11" fill="var(--mute)">' + s + '</text>'; });
+  var path = pts.map(function(d,i){ return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(d.scores.overall).toFixed(1); }).join(' ');
+  svg += '<path d="' + path + ' L' + X(pts.length-1).toFixed(1) + ' ' + Y(0) + ' L' + X(0).toFixed(1) + ' ' + Y(0) + 'Z" fill="var(--accent-fill)" opacity=".12"/>';
+  svg += '<path d="' + path + '" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>';
+  pts.forEach(function(d,i){ svg += '<circle cx="' + X(i) + '" cy="' + Y(d.scores.overall) + '" r="' + (i === pts.length-1 ? 5 : 3.5) + '" fill="' + (i === pts.length-1 ? 'var(--accent-fill)' : 'var(--panel)') + '" stroke="var(--accent)" stroke-width="2"/>'; });
+  svg += '<text x="' + pl + '" y="' + (H-5) + '" font-size="11" fill="var(--mute)">' + fmtDate(first.date) + '</text><text x="' + (W-pr) + '" y="' + (H-5) + '" text-anchor="end" font-size="11" fill="var(--mute)">' + fmtDate(last.date) + '</text></svg>';
+  var holder = h('div'); holder.innerHTML = svg; card.appendChild(holder);
+  return card;
+}
+
+/* ---------- drive detail ---------- */
+var DV = null; // live state for the open drive
+function openDrive(meta){ S.open = { id:meta.id, meta:meta, example:!!meta.example }; S.tab = 'drives'; render(); window.scrollTo(0,0); }
+function prevOnRoad(meta){
+  var r = (meta.road||'').trim().toLowerCase();
+  return S.drives.filter(function(d){ return d.id !== meta.id && (d.road||'').trim().toLowerCase() === r && d.date < meta.date; }).sort(function(a,b){ return b.date - a.date; })[0] || null;
+}
+function refreshDriveHeader(){ var el = $('#dhdr'); if (el && S.open) el.replaceWith(driveHeader(S.open.meta)); }
+function driveHeader(m){
+  var s = m.summary;
+  return h('div', { class:'card hdr', id:'dhdr' }, [
+    h('div', { class:'t' }, [ m.road, m.example ? h('span', { class:'tag', text:'Example' }) : null ]),
+    h('div', { class:'small mute', text: fmtDate(m.date) + ', ' + fmtTime(m.date) + [m.car, m.surface].filter(Boolean).map(function(x){ return ' · ' + x; }).join('') + (m.feel ? ' · felt ' + m.feel + '/5' : '') }),
+    h('div', { class:'stats' }, [
+      stat(km(s.dist) + ' km', 'Distance'), stat(fmtDur(s.moveSec), 'Moving time'), stat(m.corners.length, 'Corners'), stat(s.climb != null ? s.climb + ' m' : s.avgKmh + ' km/h', s.climb != null ? 'Climb' : 'Avg speed')
+    ]),
+    m.notes ? h('p', { class:'small', style:'margin-top:10px', text:m.notes }) : null
+  ]);
+}
+function stat(v, l){ return h('div', null, [ h('b', { text:String(v) }), h('span', { text:l }) ]); }
+
+function viewDrive(){
+  var m = S.open.meta, box = h('div', { class:'stack' });
+  box.appendChild(h('div', null, [ h('button', { class:'back', onclick:function(){ S.open = null; render(); } }, [ '← All drives' ]) ]));
+  box.appendChild(driveHeader(m));
+  if (m.example) box.appendChild(h('div', { class:'banner' }, [ h('b', { text:'This is a made-up drive. ' }), 'Some corners were driven roughly on purpose so you can see how the scoring reacts. Import your own drive to replace it.' ]));
+  box.appendChild(scoreCard(m));
+  box.appendChild(coachCard(m));
+  var mapC = h('canvas', { class:'cvs', 'aria-label':'Route map. Tap a numbered corner to inspect it.' });
+  var traceC = h('canvas', { class:'cvs', 'aria-label':'Speed and g-force trace. Drag to scrub.' });
+  var ggC = h('canvas', { class:'cvs', 'aria-label':'Friction circle: cornering load against braking and acceleration.' });
+  var metricChips = h('div', { class:'chips' });
+  var readout = h('div', { class:'readout', 'aria-live':'polite' });
+  var zoomBtn = h('button', { class:'link small', hidden:true, text:'Show whole drive', onclick:function(){ selectCorner(null); } });
+  box.appendChild(h('div', { class:'card' }, [ h('div', { class:'secHead' }, [ h('h2', { text:'Route' }), zoomBtn ]), metricChips, h('div', { style:'height:10px' }), mapC, h('div', { class:'legend', id:'mapLegend' }) ]));
+  box.appendChild(h('div', { class:'card' }, [ h('h2', { text:'Trace' }), readout, traceC, h('div', { class:'keys' }, [ h('span', { style:'color:var(--ink)', text:'Speed' }), h('span', { style:'color:var(--lon)', text:'Brake / throttle g' }), h('span', { style:'color:var(--lat)', text:'Cornering g' }) ]) ]));
+  box.appendChild(h('div', { class:'card' }, [ h('div', { class:'secHead' }, [ h('h2', { text:'Friction circle' }), h('span', { class:'small mute', text:'rings at 0.25 g' }) ]), h('p', { class:'small mute', style:'margin-bottom:10px', text:'Smooth drivers trace round, joined-up arcs between braking and cornering. Sharp corners in the shape mean one input stopped before the next began.' }), ggC ]));
+  var cornersBox = h('div');
+  box.appendChild(h('div', { class:'card' }, [ h('div', { class:'secHead' }, [ h('h2', { text:'Corners' }), h('div', { class:'chips', id:'csort' }) ]), cornersBox ]));
+  box.appendChild(editCard(m));
+  box.appendChild(qualityCard(m));
+
+  DV = { meta:m, mapC:mapC, traceC:traceC, ggC:ggC, readout:readout, zoomBtn:zoomBtn, cornersBox:cornersBox, metric:'jerk', sel:null, cur:null, sort:'order', t:null };
+  ['jerk','load','speed'].forEach(function(k){
+    var b = h('button', { class:'chip', 'aria-pressed': String(k === DV.metric), text:{ jerk:'Smoothness', load:'Cornering load', speed:'Speed' }[k], onclick:function(){ DV.metric = k; metricChips.querySelectorAll('.chip').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); drawMap(); } });
+    metricChips.appendChild(b);
+  });
+  readout.textContent = 'Loading trace…';
+  loadTrace(m).then(function(cols){
+    if (!DV || DV.meta !== m) return;
+    DV.t = HT.unpack(cols); readout.textContent = 'Drag across the trace to follow the car on the map.';
+    renderCorners(); drawAll(); bindInteractions();
+  }).catch(function(e){ readout.textContent = e.message || 'This drive’s trace couldn’t be loaded.'; });
+  setTimeout(function(){ var cs = $('#csort'); if (!cs) return; [['order','In order'],['worst','Roughest first']].forEach(function(o){ cs.appendChild(h('button', { class:'chip', 'aria-pressed':String(DV.sort === o[0]), text:o[1], onclick:function(){ DV.sort = o[0]; cs.querySelectorAll('.chip').forEach(function(x){ x.setAttribute('aria-pressed', String(x.textContent === o[1])); }); renderCorners(); } })); }); }, 0);
+  return box;
+}
+
+function scoreCard(m){
+  var sc = m.scores, note = h('p', { class:'subnote', text:'Tap a bar to see what it measures.' });
+  var subs = h('div', { class:'subs' });
+  ['braking','turnIn','throttle','flow','steady'].forEach(function(k){
+    var v = sc[k];
+    subs.appendChild(h('button', { class:'sub', onclick:function(){ note.textContent = HT.SUB[k][0] + ': ' + HT.SUB[k][1] + (v == null ? ' Not enough data on this drive.' : ''); } }, [
+      h('span', { text:HT.SUB[k][0] }),
+      h('span', { class:'bar' }, [ h('i', { style:'width:' + (v||0) + '%;background:' + gradeColor(v) }) ]),
+      h('b', { text: v == null ? '–' : String(v) })
+    ]));
+  });
+  var prev = m.example ? null : prevOnRoad(m), delta = null;
+  if (prev && prev.scores.overall != null && sc.overall != null) { var d = sc.overall - prev.scores.overall; delta = h('div', { class:'small', style:'margin-top:6px;text-align:center;color:' + (d >= 0 ? 'var(--good)' : 'var(--bad)'), text:(d >= 0 ? '+' : '') + d + ' vs last time' }); }
+  return h('div', { class:'card' }, [
+    h('div', { class:'secHead' }, [ h('h2', { text:'Smoothness' }), h('span', { class:'small mute', text:'out of 100' }) ]),
+    h('div', { class:'scoreTop' }, [ h('div', null, [ ring(sc.overall, true), delta ]), subs ]),
+    note
+  ]);
+}
+
+function coachCard(m){
+  var prev = m.example ? null : prevOnRoad(m);
+  var notes = HT.insights({ scores:m.scores, corners:m.corners }, prev);
+  var card = h('div', { class:'card' }, [ h('h2', { text:'Coach notes' }) ]);
+  var colors = { focus:'var(--accent-fill)', good:'var(--good)', pattern:'var(--lat)', info:'var(--mute)' };
+  notes.forEach(function(n){ card.appendChild(h('div', { class:'note' }, [ h('i', { style:'background:' + colors[n.k] }), h('div', null, [ h('h3', { text:n.t }), h('p', { text:n.b }) ]) ])); });
+  var worst = m.corners.slice().sort(function(a,b){ return a.score - b.score; }).slice(0,3).filter(function(c){ return c.score < 75; });
+  if (worst.length) {
+    var row = h('div', { class:'chips', style:'margin-top:4px' });
+    worst.forEach(function(c){ row.appendChild(h('button', { class:'chip', text:'Corner ' + c.no + ' · ' + c.score, onclick:function(){ selectCorner(c.no, true); } })); });
+    card.appendChild(h('div', { class:'note' }, [ h('i', { style:'background:var(--bad)' }), h('div', null, [ h('h3', { text:'Roughest corners' }), row ]) ]));
+  }
+  var out = h('div', { class:'debrief' }), btn;
+  btn = h('button', { class:'btn', style:'margin-top:12px', text:'Ask Claude for a debrief', onclick:function(){ debrief(m, prev, out, btn); } });
+  card.appendChild(btn); card.appendChild(out);
+  return card;
+}
+async function debrief(m, prev, out, btn){
+  var sample = null; try { sample = await claude.use('sample'); } catch(e) {}
+  if (!sample) { out.textContent = 'Claude isn’t available in this view.'; btn.hidden = true; return; }
+  btn.disabled = true; out.textContent = 'Thinking…';
+  var cs = m.corners.map(function(c){ return { no:c.no, dir:c.dir, turnDeg:c.turn, entryKmh:c.entryKmh, minKmh:c.minKmh, exitKmh:c.exitKmh, peakLatG:c.peakLat, brake:c.brake ? { peakG:c.brake.peak, onsetJerk:c.brake.onset, releaseJerk:c.brake.release, trailSec:c.brake.trail } : null, turnInJerk:c.turnIn, throttleJerk:c.throttle, coastSec:c.coast, score:c.score }; });
+  var data = { road:m.road, car:m.car, surface:m.surface, driverNotes:m.notes, summary:m.summary, scores:m.scores, previousOnSameRoad: prev ? { date:new Date(prev.date).toISOString().slice(0,10), scores:prev.scores } : null, corners:cs.slice(0,120) };
+  var prompt = 'You are a calm, practical driving coach. The data below comes from a phone logging GPS and accelerometer on a public road drive. Scores are 0-100 for smoothness (higher is smoother), computed from jerk (rate of change of g-force) in each phase: braking onset and release, turn-in, throttle pickup, coasting time, and overall composure. Jerk is in g per second. Lower jerk is smoother.\n\nWrite a short debrief in plain text, no markdown headings, under 220 words: one sentence overall, then three or four specific things to practise, each naming corner numbers where relevant, then one sentence of encouragement. Focus only on smoothness and car control technique (vision, brake modulation, trail braking, steering, throttle). Never encourage higher speed or faster times; this is a public road. If the data is thin, say so.\n\nDATA:\n' + JSON.stringify(data);
+  try {
+    await sample(prompt, { onText:function(u){ out.textContent = u.text; }, modelTier:'default' });
+    btn.textContent = 'Ask again'; btn.disabled = false;
+  } catch(e) {
+    if (e && e.code === 'not_granted') { out.textContent = 'Claude wasn’t allowed for this page, so the debrief is off.'; btn.hidden = true; }
+    else if (e && e.code === 'rate_limited') { out.textContent = 'Claude is busy right now. Try again in a minute.'; btn.disabled = false; }
+    else { out.textContent = (e && e.text) || 'The debrief didn’t come through. Try again.'; btn.disabled = false; }
+  }
+}
+
+function editCard(m){
+  if (m.example) return h('div');
+  var road = h('input', { id:'e-road', value:m.road }), notes = h('textarea', { id:'e-notes', rows:'3' }); notes.value = m.notes || '';
+  var car = carSelect('e-car', m.carId), surf = h('select', { id:'e-surf' }, ['Dry','Damp','Wet'].map(function(s){ return h('option', { selected: s === m.surface, text:s }); }));
+  var feel = h('select', { id:'e-feel' }, [h('option', { value:'', text:'–' })].concat([1,2,3,4,5].map(function(n){ return h('option', { value:String(n), selected: m.feel === n, text:String(n) }); })));
+  var msg = h('p', { class:'small mute', 'aria-live':'polite' });
+  var del = h('button', { class:'btn ghost danger', text:'Delete drive', onclick:function(){
+    if (del.dataset.armed) { del.disabled = true; deleteDrive(m).then(function(){ S.open = null; render(); }).catch(function(){ msg.textContent = 'Couldn’t delete. Try again.'; del.disabled = false; }); return; }
+    del.dataset.armed = '1'; del.textContent = 'Tap again to delete for good';
+  } });
+  return h('details', { class:'card' }, [
+    h('summary', { style:'cursor:pointer;font:600 16px var(--f-disp)', text:'Edit details' }),
+    h('div', { class:'grid2', style:'margin-top:12px' }, [
+      h('label', { class:'f full' }, ['Road or route', road]),
+      h('label', { class:'f' }, ['Car', car]), h('label', { class:'f' }, ['Surface', surf]),
+      h('label', { class:'f' }, ['How it felt (1–5)', feel]),
+      h('label', { class:'f full' }, ['Notes', notes]),
+      h('div', { class:'row full', style:'justify-content:space-between' }, [
+        h('button', { class:'btn primary', text:'Save changes', onclick:function(){
+          var c = S.cars.filter(function(x){ return x.id === car.value; })[0];
+          updateDrive(m, { road:road.value.trim() || m.road, carId:car.value, car:c ? c.name : '', surface:surf.value, feel:feel.value ? +feel.value : null, notes:notes.value.trim() })
+            .then(function(){ msg.textContent = 'Saved.'; refreshDriveHeader(); }).catch(function(){ msg.textContent = 'Couldn’t save. Try again.'; });
+        } }), del ]),
+      h('div', { class:'full' }, [msg])
+    ])
+  ]);
+}
+function qualityCard(m){
+  var s = m.summary, im = m.imu || {};
+  var motion = im.used ? 'Used, aligned automatically (fit ' + Math.round(im.fitLon*100) + '% braking, ' + Math.round(im.fitLat*100) + '% cornering).' : (m.source === 'gpx' ? 'Not in GPX files. Scores come from GPS only, so they are less sharp.' : 'Not used: ' + (im.reason || 'no motion data') + '. Scores come from GPS only.');
+  return h('details', { class:'card small' }, [
+    h('summary', { style:'cursor:pointer;font:600 16px var(--f-disp)', text:'Data quality' }),
+    h('div', { class:'mtab', style:'margin-top:10px;grid-template-columns:auto 1fr' }, [
+      h('span', { class:'mute', text:'Source' }), h('span', { text: { recorder:'Heel & Toe recorder', gpx:'GPX track', example:'Generated example' }[m.source] || m.source }),
+      h('span', { class:'mute', text:'GPS rate' }), h('span', { text: s.gpsHz + ' per second' }),
+      h('span', { class:'mute', text:'Motion sensor' }), h('span', { text:motion }),
+      h('span', { class:'mute', text:'Top speed' }), h('span', { text: s.maxKmh + ' km/h' })
+    ]),
+    h('p', { class:'mute', style:'margin-top:10px', text:'Scores are a starting calibration. Compare drives with each other rather than reading too much into a single number.' })
+  ]);
+}
+
+/* ---------- corners list ---------- */
+var TIPS = {
+  sBrake:'Squeeze the brake on more progressively, over about half a second.',
+  sRelease:'Ease off the brake more gradually as you turn in, instead of letting go at once.',
+  sTurnIn:'Turn the wheel in one slower, steady motion. Aim for a single input with no corrections.',
+  sThrottle:'Feed the throttle in more gently as you unwind the steering.',
+  sFlow:'You coasted here. Carry a touch of brake into the turn, or pick up a light throttle sooner.',
+  sJerk:'The car was unsettled through this corner. Look further ahead and make earlier, smaller inputs.'
+};
+function renderCorners(){
+  var box = DV.cornersBox, m = DV.meta; box.textContent = '';
+  if (!m.corners.length) { box.appendChild(h('p', { class:'mute', text:'No corners sharp enough to analyse on this drive.' })); return; }
+  var list = m.corners.slice(); if (DV.sort === 'worst') list.sort(function(a,b){ return a.score - b.score; });
+  list.forEach(function(c){
+    var sel = DV.sel === c.no, det = null;
+    if (sel) {
+      var rows = [];
+      function mrow(name, val, s){ rows.push(h('span', { text:name }), h('span', { class:'v', text:val }), s == null ? h('span') : h('span', { class:'dot', style:'background:' + gradeColor(s), title:'score ' + s })); }
+      if (c.brake) { mrow('Peak braking', c.brake.peak.toFixed(2) + ' g'); mrow('Brake squeeze', c.brake.onset.toFixed(2) + ' g/s', c.sBrake); mrow('Brake release', c.brake.release.toFixed(2) + ' g/s', c.sRelease); mrow('Brake into the turn', c.brake.trail.toFixed(1) + ' s'); }
+      else mrow('Braking', 'none (lift or flat)');
+      mrow('Turn-in', c.turnIn.toFixed(2) + ' g/s', c.sTurnIn);
+      if (c.throttle != null) mrow('Throttle pickup', c.throttle.toFixed(2) + ' g/s', c.sThrottle);
+      mrow('Coasting', c.coast.toFixed(1) + ' s', c.sFlow);
+      mrow('Peak cornering', c.peakLat.toFixed(2) + ' g');
+      mrow('Speed in / min / out', c.entryKmh + ' / ' + c.minKmh + ' / ' + c.exitKmh + ' km/h');
+      if (c.radius) mrow('Radius (approx.)', c.radius + ' m');
+      var keys = ['sBrake','sRelease','sTurnIn','sThrottle','sFlow','sJerk'].filter(function(k){ return c[k] != null; }).sort(function(a,b){ return c[a] - c[b]; });
+      var tip = c[keys[0]] < 75 ? TIPS[keys[0]] : 'Clean corner. Remember how this one felt.';
+      var link = null;
+      if (DV.t && !m.example) { var ll = toLatLon(DV.t.x[c.apex], DV.t.y[c.apex]); link = h('a', { href:'https://www.google.com/maps?q=' + ll[0].toFixed(6) + ',' + ll[1].toFixed(6), target:'_blank', rel:'noopener', class:'small', style:'color:var(--accent)', text:'Open this corner in Google Maps' }); }
+      det = h('div', { class:'cdet' }, [ h('p', { class:'small', text:tip }), h('div', { class:'mtab' }, rows), link ]);
+    }
+    var item = h('div', { class:'corner', 'aria-selected':String(sel), id:'corner-' + c.no }, [
+      h('button', { 'aria-expanded':String(sel), onclick:function(){ selectCorner(sel ? null : c.no); } }, [
+        h('span', { class:'no', text:String(c.no) }),
+        h('div', null, [ h('div', { text:(c.dir === 'L' ? 'Left' : 'Right') + ', ' + c.turn + '°' }), h('div', { class:'m', text:c.minKmh + ' km/h at the slowest · ' + c.peakLat.toFixed(2) + ' g' }) ]),
+        h('span', { class:'pill', style:'background:' + gradeColor(c.score), text:String(c.score) })
+      ]), det ]);
+    box.appendChild(item);
+  });
+}
+function toLatLon(x, y){ var o = DV.meta.origin; return [o[0] + y/110540, o[1] + x/(111320*Math.cos(o[0]*Math.PI/180))]; }
+function selectCorner(no, scroll){
+  if (!DV) return; DV.sel = no; DV.zoomBtn.hidden = no == null;
+  renderCorners(); drawAll();
+  if (no != null && scroll) { var el = document.getElementById('corner-' + no); if (el) el.scrollIntoView({ block:'center', behavior:'smooth' }); }
+}
+function cornerBy(no){ return DV.meta.corners.filter(function(c){ return c.no === no; })[0]; }
+function windowRange(){
+  var n = DV.t.v.length; if (DV.sel == null) return [0, n-1];
+  var c = cornerBy(DV.sel), a = c.brake ? Math.min(c.brake.start, c.s) : c.s; return [Math.max(0, a - 15), Math.min(n-1, c.e + 20)];
+}
+
+/* ---------- drawing ---------- */
+function drawAll(){ drawMap(); drawTrace(); drawGG(); }
+function metricVal(i){ var t = DV.t; return DV.metric === 'jerk' ? Math.min(1, t.jerk[i]/1.2) : DV.metric === 'load' ? Math.min(1, Math.hypot(t.lat[i], t.lon[i])/0.8) : 0; }
+function drawMap(){
+  if (!DV || !DV.t) return;
+  var t = DV.t, n = t.v.length, w = DV.mapC.clientWidth || 300, H = Math.round(Math.min(420, Math.max(260, w*0.8)));
+  var o = setupCanvas(DV.mapC, H), g = o.g, rg = windowRange(), pad = 22;
+  var i0 = DV.sel == null ? 0 : rg[0], i1 = DV.sel == null ? n-1 : rg[1];
+  var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (var i = i0; i <= i1; i++) { x0 = Math.min(x0, t.x[i]); x1 = Math.max(x1, t.x[i]); y0 = Math.min(y0, t.y[i]); y1 = Math.max(y1, t.y[i]); }
+  var sx = Math.max(x1-x0, 40), sy = Math.max(y1-y0, 40), s = Math.min((o.w-2*pad)/sx, (o.h-2*pad)/sy);
+  var ox = (o.w - (x1-x0)*s)/2 - x0*s, oy = (o.h + (y1-y0)*s)/2 + y0*s;
+  DV.proj = function(x, y){ return [x*s + ox, oy - y*s]; };
+  var vmax = 0; for (i = 0; i < n; i++) vmax = Math.max(vmax, t.v[i]);
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  // dimmed full route when zoomed
+  if (DV.sel != null) { g.strokeStyle = cssVar('--line'); g.lineWidth = 4; g.beginPath(); for (i = 0; i < n; i++) { var p = DV.proj(t.x[i], t.y[i]); i ? g.lineTo(p[0],p[1]) : g.moveTo(p[0],p[1]); } g.stroke(); }
+  g.lineWidth = DV.sel == null ? 4 : 7;
+  var NB = 14, paths = []; for (var bk = 0; bk < NB; bk++) paths.push(new Path2D());
+  for (i = Math.max(1, i0); i <= i1; i++) {
+    var a = DV.proj(t.x[i-1], t.y[i-1]), b = DV.proj(t.x[i], t.y[i]);
+    var f = DV.metric === 'speed' ? t.v[i]/(vmax||1) : metricVal(i), pb = paths[Math.min(NB-1, Math.floor(f*NB))];
+    pb.moveTo(a[0],a[1]); pb.lineTo(b[0],b[1]);
+  }
+  paths.forEach(function(pth, k){ g.strokeStyle = ramp((k + .5)/NB); g.stroke(pth); });
+  // start / finish
+  var st = DV.proj(t.x[0], t.y[0]), en = DV.proj(t.x[n-1], t.y[n-1]);
+  g.fillStyle = cssVar('--good'); g.beginPath(); g.arc(st[0], st[1], 6, 0, 7); g.fill();
+  g.fillStyle = cssVar('--ink'); g.fillRect(en[0]-5, en[1]-5, 10, 10);
+  // corner badges
+  DV.badges = [];
+  g.font = '600 11px ' + cssVar('--f-disp'); g.textAlign = 'center'; g.textBaseline = 'middle';
+  DV.meta.corners.forEach(function(c){
+    var p = DV.proj(t.x[c.apex], t.y[c.apex]); if (p[0] < -10 || p[0] > o.w+10 || p[1] < -10 || p[1] > o.h+10) return;
+    var on = DV.sel === c.no, r = on ? 12 : 9;
+    g.fillStyle = on ? cssVar('--accent-fill') : cssVar('--panel'); g.strokeStyle = on ? cssVar('--accent-fill') : gradeColor(c.score); g.lineWidth = 2;
+    g.beginPath(); g.arc(p[0], p[1], r, 0, 7); g.fill(); g.stroke();
+    g.fillStyle = on ? cssVar('--accent-ink') : cssVar('--ink'); g.fillText(String(c.no), p[0], p[1] + 0.5);
+    DV.badges.push({ no:c.no, x:p[0], y:p[1] });
+  });
+  if (DV.cur != null) { var q = DV.proj(t.x[DV.cur], t.y[DV.cur]); g.fillStyle = cssVar('--ink'); g.strokeStyle = cssVar('--panel'); g.lineWidth = 3; g.beginPath(); g.arc(q[0], q[1], 7, 0, 7); g.fill(); g.stroke(); }
+  // scale bar + north
+  var nice = [20,50,100,200,500,1000,2000,5000,10000], len = nice[0]; nice.forEach(function(v){ if (v*s <= o.w/4) len = v; });
+  g.strokeStyle = cssVar('--mute'); g.lineWidth = 2; g.beginPath(); g.moveTo(12, o.h-12); g.lineTo(12 + len*s, o.h-12); g.stroke();
+  g.fillStyle = cssVar('--mute'); g.font = '500 11px ' + cssVar('--f-body'); g.textAlign = 'left'; g.fillText(len >= 1000 ? len/1000 + ' km' : len + ' m', 12, o.h-22);
+  g.textAlign = 'right'; g.fillText('N ↑', o.w-10, 14);
+  var lg = $('#mapLegend');
+  if (lg) { lg.textContent = ''; var lab = { jerk:['calm','abrupt'], load:['light','heavy load'], speed:['slow','fast'] }[DV.metric]; lg.appendChild(h('span', { text:lab[0] })); lg.appendChild(h('div', { class:'ramp' })); lg.appendChild(h('span', { text:lab[1] })); lg.appendChild(h('span', { text:'· green start, square finish' })); }
+}
+function drawTrace(){
+  if (!DV || !DV.t) return;
+  var t = DV.t, o = setupCanvas(DV.traceC, 230), g = o.g, rg = windowRange(), i0 = rg[0], i1 = rg[1];
+  var pl = 34, pr = 8, mid = 104, top = 8, gTop = 116, gBot = o.h - 18;
+  var X = function(i){ return pl + (i - i0)*(o.w - pl - pr)/Math.max(1, i1 - i0); };
+  DV.traceX = { i0:i0, i1:i1, pl:pl, pr:pr, w:o.w };
+  var vmax = 0, gmax = 0.3; for (var i = i0; i <= i1; i++) { vmax = Math.max(vmax, t.v[i]); gmax = Math.max(gmax, Math.abs(t.lat[i]), Math.abs(t.lon[i])); }
+  vmax = Math.ceil(vmax*3.6/20)*20/3.6 || 10; gmax = Math.min(1.2, Math.ceil(gmax*4)/4);
+  var Yv = function(v){ return mid - v/vmax*(mid - top); }, Yg = function(x){ return (gTop+gBot)/2 - x/gmax*(gBot-gTop)/2; };
+  // corner spans
+  DV.meta.corners.forEach(function(c){ if (c.e < i0 || c.s > i1) return; g.fillStyle = cssVar(DV.sel === c.no ? '--accent-fill' : '--line'); g.globalAlpha = DV.sel === c.no ? .14 : .45; g.fillRect(X(Math.max(c.s,i0)), top, X(Math.min(c.e,i1)) - X(Math.max(c.s,i0)), gBot - top); g.globalAlpha = 1; });
+  g.strokeStyle = cssVar('--line'); g.lineWidth = 1; g.font = '500 10px ' + cssVar('--f-mono'); g.fillStyle = cssVar('--mute'); g.textAlign = 'right'; g.textBaseline = 'middle';
+  [0, vmax/2, vmax].forEach(function(v){ g.beginPath(); g.moveTo(pl, Yv(v)); g.lineTo(o.w-pr, Yv(v)); g.stroke(); g.fillText(Math.round(v*3.6), pl-4, Yv(v)); });
+  [-gmax, 0, gmax].forEach(function(x){ g.beginPath(); g.moveTo(pl, Yg(x)); g.lineTo(o.w-pr, Yg(x)); g.stroke(); g.fillText((x > 0 ? '+' : '') + x.toFixed(2).replace(/0+$/,'').replace(/\.$/,''), pl-4, Yg(x)); });
+  function line(arr, Y, col, wd){ g.strokeStyle = col; g.lineWidth = wd; g.beginPath(); var step = Math.max(1, Math.floor((i1-i0)/(o.w*2))); for (var i = i0; i <= i1; i += step) { var y = Y(arr[i]); i === i0 ? g.moveTo(X(i), y) : g.lineTo(X(i), y); } g.stroke(); }
+  line(t.v, Yv, cssVar('--ink'), 1.6);
+  line(t.lon, Yg, cssVar('--lon'), 1.6);
+  line(t.lat.map(function(x){ return Math.abs(x); }), Yg, cssVar('--lat'), 1.6);
+  g.textAlign = 'left'; g.fillStyle = cssVar('--mute'); g.fillText('km/h', pl + 4, top + 6); g.fillText('g (braking below zero)', pl + 4, gBot + 10);
+  if (DV.cur != null && DV.cur >= i0 && DV.cur <= i1) { g.strokeStyle = cssVar('--accent'); g.lineWidth = 2; g.beginPath(); g.moveTo(X(DV.cur), top); g.lineTo(X(DV.cur), gBot); g.stroke(); }
+}
+function drawGG(){
+  if (!DV || !DV.t) return;
+  var t = DV.t, w = DV.ggC.clientWidth || 300, S0 = Math.min(w, 340), o = setupCanvas(DV.ggC, S0), g = o.g;
+  var cx = o.w/2, cy = o.h/2, R = S0/2 - 18, gm = 1.0, sc = R/gm;
+  g.strokeStyle = cssVar('--line'); g.lineWidth = 1;
+  [0.25,0.5,0.75,1].forEach(function(r){ g.beginPath(); g.arc(cx, cy, r*sc, 0, 7); g.stroke(); });
+  g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy); g.moveTo(cx, cy - R); g.lineTo(cx, cy + R); g.stroke();
+  g.fillStyle = cssVar('--mute'); g.font = '500 11px ' + cssVar('--f-body'); g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('Accelerating', cx, 9); g.fillText('Braking', cx, o.h - 8); g.textAlign = 'left'; g.fillText('Left', cx - R + 2, cy - 9); g.textAlign = 'right'; g.fillText('Right', cx + R - 2, cy - 9);
+  g.textAlign = 'left'; g.fillText('0.5 g', cx + 0.5*sc*0.72 + 2, cy - 0.5*sc*0.72 - 2);
+  var n = t.v.length, rg = windowRange(), P = function(i){ return [cx - t.lat[i]*sc, cy - t.lon[i]*sc]; };
+  g.globalAlpha = DV.sel == null ? 0.5 : 0.18;
+  for (var i = 0; i < n; i++) { if (t.v[i] < 3) continue; var p = P(i); g.fillStyle = ramp(Math.min(1, t.jerk[i]/1.2)); g.fillRect(p[0]-1.3, p[1]-1.3, 2.6, 2.6); }
+  g.globalAlpha = 1;
+  if (DV.sel != null) { g.strokeStyle = cssVar('--accent'); g.lineWidth = 2; g.beginPath(); for (i = rg[0]; i <= rg[1]; i++) { p = P(i); i === rg[0] ? g.moveTo(p[0],p[1]) : g.lineTo(p[0],p[1]); } g.stroke(); }
+  if (DV.cur != null) { p = P(DV.cur); g.fillStyle = cssVar('--ink'); g.strokeStyle = cssVar('--panel'); g.lineWidth = 3; g.beginPath(); g.arc(p[0], p[1], 6, 0, 7); g.fill(); g.stroke(); }
+}
+function bindInteractions(){
+  var tc = DV.traceC, scrubbing = false;
+  function idxAt(ev){ var r = tc.getBoundingClientRect(), x = ev.clientX - r.left, T = DV.traceX; var f = (x - T.pl)/(T.w - T.pl - T.pr); return Math.round(T.i0 + Math.max(0, Math.min(1, f))*(T.i1 - T.i0)); }
+  var raf = 0;
+  function upd(i){ DV.cur = i; if (raf) return; raf = requestAnimationFrame(function(){ raf = 0; updNow(DV.cur); }); }
+  function updNow(i){ var t = DV.t, lat = t.lat[i], lon = t.lon[i];
+    DV.readout.textContent = Math.round(t.v[i]*3.6) + ' km/h · ' + (lon < -0.05 ? 'braking ' + (-lon).toFixed(2) + ' g' : lon > 0.05 ? 'accelerating ' + lon.toFixed(2) + ' g' : 'neutral') + ' · ' + (Math.abs(lat) > 0.05 ? (lat > 0 ? 'left ' : 'right ') + Math.abs(lat).toFixed(2) + ' g' : 'straight');
+    drawAll(); }
+  tc.addEventListener('pointerdown', function(e){ scrubbing = true; tc.setPointerCapture(e.pointerId); upd(idxAt(e)); });
+  tc.addEventListener('pointermove', function(e){ if (scrubbing) upd(idxAt(e)); });
+  tc.addEventListener('pointerup', function(){ scrubbing = false; });
+  tc.addEventListener('pointercancel', function(){ scrubbing = false; });
+  DV.mapC.addEventListener('click', function(e){
+    var r = DV.mapC.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, best = null, bd = 26;
+    (DV.badges || []).forEach(function(b){ var d = Math.hypot(b.x - x, b.y - y); if (d < bd) { bd = d; best = b; } });
+    if (best) selectCorner(best.no === DV.sel ? null : best.no, true);
+  });
+  var rt; window.addEventListener('resize', function(){ clearTimeout(rt); rt = setTimeout(function(){ if (DV && document.body.contains(DV.mapC)) drawAll(); }, 150); });
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(){ if (DV && document.body.contains(DV.mapC)) drawAll(); });
+}
+
+/* ---------- import ---------- */
+var IMP = { res:null, err:'', busy:false, fileName:'' };
+function carSelect(id, val){
+  return h('select', { id:id }, [ h('option', { value:'', text:'No car' }) ].concat(S.cars.map(function(c){ return h('option', { value:c.id, selected: c.id === val, text:c.name }); })));
+}
+function viewImport(){
+  var box = h('div', { class:'stack' });
+  if (S.dbNote) box.appendChild(h('div', { class:'banner', text:S.dbNote }));
+  if (!IMP.res) {
+    var input = h('input', { type:'file', id:'file', accept:'.json,.gpx,application/json,application/gpx+xml', hidden:true, onchange:function(){ if (input.files[0]) readFile(input.files[0]); } });
+    var drop = h('div', { class:'drop' }, [
+      h('h2', { text:'Import a drive', style:'margin:0' }),
+      h('p', { class:'mute small', text:'A recording from the Heel & Toe recorder (.json) gives the sharpest analysis. A .gpx track from any GPS app works too, with GPS-only scores.' }),
+      h('button', { class:'btn primary', text: IMP.busy ? 'Analysing…' : 'Choose a file', disabled:IMP.busy, onclick:function(){ input.click(); } }), input,
+      IMP.err ? h('p', { class:'err', text:IMP.err }) : null
+    ]);
+    drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', function(){ drop.classList.remove('over'); });
+    drop.addEventListener('drop', function(e){ e.preventDefault(); drop.classList.remove('over'); var f = e.dataTransfer.files[0]; if (f) readFile(f); });
+    box.appendChild(drop);
+    box.appendChild(h('div', { class:'card stack' }, [ h('h3', { text:'Just exploring?' }), h('p', { class:'small mute', text:'Open the example drive to see every chart with sample data.' }), h('div', null, [ h('button', { class:'btn', text:'Open example drive', onclick:function(){ openDrive(getExample()); } }) ]) ]));
+    return box;
+  }
+  var r = IMP.res, s = r.summary;
+  var road = h('input', { id:'i-road', placeholder:'e.g. Gerik–Jeli eastbound' }), notes = h('textarea', { id:'i-notes', rows:'3', placeholder:'Conditions, traffic, what you were working on' });
+  var car = carSelect('i-car', S.cars.length === 1 ? S.cars[0].id : ''), surf = h('select', { id:'i-surf' }, ['Dry','Damp','Wet'].map(function(x){ return h('option', { text:x }); }));
+  var feel = h('select', { id:'i-feel' }, [h('option', { value:'', text:'–' })].concat([1,2,3,4,5].map(function(n){ return h('option', { value:String(n), text:String(n) }); })));
+  var msg = h('p', { class:'small', 'aria-live':'polite' });
+  var roads = Array.from(new Set(S.drives.map(function(d){ return d.road; }))); var dl = h('datalist', { id:'roadlist' }, roads.map(function(x){ return h('option', { value:x }); })); road.setAttribute('list', 'roadlist');
+  var save = h('button', { class:'btn primary block', text:'Save drive', onclick:function(){
+    if (!road.value.trim()) { msg.textContent = 'Give the road a name so drives on it can be compared.'; msg.className = 'err'; road.focus(); return; }
+    save.disabled = true; save.textContent = 'Saving…';
+    var c = S.cars.filter(function(x){ return x.id === car.value; })[0];
+    saveDrive(r, { road:road.value.trim(), carId:car.value, car:c ? c.name : '', surface:surf.value, notes:notes.value.trim(), feel:feel.value ? +feel.value : null }).then(function(meta){
+      IMP.res = null; openDrive(meta);
+    }).catch(function(e){ save.disabled = false; save.textContent = 'Save drive'; msg.className = 'err'; msg.textContent = (e && e.code === 'quota_exceeded') ? 'Storage is full. Delete some old drives, then try again.' : 'Couldn’t save the drive. Check your connection and try again.'; });
+  } });
+  box.appendChild(h('div', { class:'card stack' }, [
+    h('div', { class:'row', style:'justify-content:space-between;align-items:flex-start' }, [ h('div', null, [ h('h2', { text:'Ready to save', style:'margin:0' }), h('p', { class:'small mute', text: IMP.fileName + ' · ' + fmtDate(r.startedAt) + ', ' + fmtTime(r.startedAt) }) ]), ring(r.scores.overall) ]),
+    h('div', { class:'stats', style:'margin-top:0' }, [ stat(km(s.dist) + ' km', 'Distance'), stat(fmtDur(s.moveSec), 'Moving time'), stat(r.corners.length, 'Corners'), stat(r.imu.used ? 'Yes' : 'GPS only', 'Motion data') ]),
+    r.imu.used || r.source === 'gpx' ? null : h('div', { class:'banner', text:'Motion data wasn’t used: ' + (r.imu.reason || 'not recorded') + '. Check the phone is firmly mounted.' }),
+    h('div', { class:'grid2' }, [ h('label', { class:'f full' }, ['Road or route', road, dl]), h('label', { class:'f' }, ['Car', car]), h('label', { class:'f' }, ['Surface', surf]), h('label', { class:'f' }, ['How it felt (1–5)', feel]), h('label', { class:'f full' }, ['Notes', notes]) ]),
+    S.cars.length ? null : h('p', { class:'small mute' }, [ 'Tip: add your cars in ', h('button', { class:'link', text:'Garage', onclick:function(){ S.tab = 'garage'; render(); } }), ' to tag drives with a car and setup.' ]),
+    save, msg,
+    h('button', { class:'btn ghost', text:'Cancel', onclick:function(){ IMP.res = null; render(); } })
+  ]));
+  return box;
+}
+function readFile(f){
+  IMP.err = ''; IMP.busy = true; IMP.fileName = f.name; render();
+  var rd = new FileReader();
+  rd.onload = function(){ setTimeout(function(){
+    try { IMP.res = HT.process(HT.parseFile(f.name, String(rd.result))); }
+    catch(e) { IMP.err = (e && e.message) || 'This file couldn’t be read.'; IMP.res = null; }
+    IMP.busy = false; render();
+  }, 30); };
+  rd.onerror = function(){ IMP.busy = false; IMP.err = 'The file couldn’t be opened.'; render(); };
+  rd.readAsText(f);
+}
+
+/* ---------- garage ---------- */
+var GE = null; // car being edited
+function viewGarage(){
+  var box = h('div', { class:'stack' });
+  if (S.dbNote) box.appendChild(h('div', { class:'banner', text:S.dbNote }));
+  var card = h('div', { class:'card' }, [ h('div', { class:'secHead' }, [ h('h2', { text:'Garage' }), h('button', { class:'btn', text:'Add car', onclick:function(){ GE = { name:'', tyres:'', pressures:'', mods:'', notes:'' }; render(); } }) ]) ]);
+  if (!S.cars.length) card.appendChild(h('p', { class:'mute', text:'No cars yet. Add one to tag drives with the car and its setup.' }));
+  S.cars.forEach(function(c){
+    var n = S.drives.filter(function(d){ return d.carId === c.id; });
+    var avg = n.filter(function(d){ return d.scores.overall != null; }); avg = avg.length ? Math.round(avg.reduce(function(a,d){ return a + d.scores.overall; }, 0)/avg.length) : null;
+    card.appendChild(h('div', { class:'car' }, [
+      h('div', { style:'min-width:0' }, [ h('h3', { text:c.name }), h('p', { class:'small mute', text:[c.tyres && 'Tyres: ' + c.tyres, c.pressures && 'Pressures: ' + c.pressures].filter(Boolean).join(' · ') || 'No setup notes' }), c.mods ? h('p', { class:'small mute', text:'Mods: ' + c.mods }) : null, h('p', { class:'small mute', text: n.length + (n.length === 1 ? ' drive' : ' drives') + (avg != null ? ' · average smoothness ' + avg : '') }) ]),
+      h('button', { class:'btn ghost', text:'Edit', onclick:function(){ GE = Object.assign({}, c); render(); } })
+    ]));
+  });
+  box.appendChild(card);
+  if (GE) box.appendChild(carForm());
+  return box;
+}
+function carForm(){
+  var f = {}; ['name','tyres','pressures','mods','notes'].forEach(function(k){ f[k] = k === 'notes' || k === 'mods' ? h('textarea', { id:'g-' + k, rows:'2' }) : h('input', { id:'g-' + k }); f[k].value = GE[k] || ''; });
+  f.name.placeholder = 'e.g. 2020 Suzuki Swift Sport'; f.tyres.placeholder = 'e.g. Michelin PS4, 195/45 R17'; f.pressures.placeholder = 'e.g. 34 F / 32 R psi cold';
+  var msg = h('p', { class:'small', 'aria-live':'polite' }), del = null;
+  if (GE.id) del = h('button', { class:'btn ghost danger', text:'Remove car', onclick:function(){
+    if (!del.dataset.armed) { del.dataset.armed = '1'; del.textContent = 'Tap again to remove'; return; }
+    db.collection(base + '/cars').doc(GE.id).delete().then(function(){ GE = null; render(); });
+  } });
+  return h('div', { class:'card stack' }, [
+    h('h2', { text: GE.id ? 'Edit car' : 'New car', style:'margin:0' }),
+    h('div', { class:'grid2' }, [ h('label', { class:'f full' }, ['Name', f.name]), h('label', { class:'f' }, ['Tyres', f.tyres]), h('label', { class:'f' }, ['Pressures', f.pressures]), h('label', { class:'f full' }, ['Mods', f.mods]), h('label', { class:'f full' }, ['Notes', f.notes]) ]),
+    h('div', { class:'row', style:'justify-content:space-between' }, [
+      h('div', { class:'row' }, [
+        h('button', { class:'btn primary', text:'Save car', onclick:function(){
+          if (!f.name.value.trim()) { msg.className = 'err'; msg.textContent = 'Give the car a name.'; return; }
+          if (!db || !base) { msg.className = 'err'; msg.textContent = 'Saving isn’t available in this view.'; return; }
+          var data = { name:f.name.value.trim(), tyres:f.tyres.value.trim(), pressures:f.pressures.value.trim(), mods:f.mods.value.trim(), notes:f.notes.value.trim() };
+          var ref = GE.id ? db.collection(base + '/cars').doc(GE.id) : db.collection(base + '/cars').doc();
+          ref.set(data).then(function(){ GE = null; render(); }).catch(function(){ msg.className = 'err'; msg.textContent = 'Couldn’t save. Try again.'; });
+        } }),
+        h('button', { class:'btn ghost', text:'Cancel', onclick:function(){ GE = null; render(); } }) ]),
+      del ]),
+    msg ]);
+}
+
+/* ---------- recorder setup ---------- */
+function viewRecorder(){
+  var box = h('div', { class:'stack' });
+  var url = S.settings.recorderUrl || '';
+  var inp = h('input', { id:'rec-url', type:'url', placeholder:'https://yourname.github.io/heeltoe/', value:url }), msg = h('p', { class:'small', 'aria-live':'polite' });
+  var open = /^https:\/\//.test(url) ? h('a', { class:'btn primary', href:url, target:'_blank', rel:'noopener', text:'Open recorder', style:'text-decoration:none;display:inline-block' }) : null;
+  box.appendChild(h('div', { class:'card stack' }, [
+    h('h2', { text:'Phone recorder', style:'margin:0' }),
+    h('p', { class:'small mute', text:'Artifacts can’t read your phone’s GPS or motion sensors, so recording happens in a small separate web page that runs in Safari or Chrome. It logs GPS once a second and the accelerometer 25 times a second, then hands you a file to import here.' }),
+    open ? h('div', null, [ open ]) : null,
+    h('label', { class:'f' }, ['Your recorder link', inp]),
+    h('div', null, [ h('button', { class:'btn', text:'Save link', onclick:function(){
+      var v = inp.value.trim(); if (v && !/^https:\/\//.test(v)) { msg.className = 'err'; msg.textContent = 'The link must start with https://'; return; }
+      if (!db || !base) { msg.className = 'err'; msg.textContent = 'Saving isn’t available in this view.'; return; }
+      db.doc(base + '/meta/settings').set(Object.assign({}, S.settings, { recorderUrl:v })).then(function(){ msg.className = 'small'; msg.textContent = 'Saved.'; }).catch(function(){ msg.className = 'err'; msg.textContent = 'Couldn’t save. Try again.'; });
+    } }) ]), msg ]));
+  box.appendChild(h('div', { class:'card stack' }, [
+    h('h3', { text:'Before each drive' }),
+    h('ol', { class:'steps' }, [
+      h('li', { text:'Mount the phone firmly in a holder. A phone sliding around in a cup holder ruins the motion data.' }),
+      h('li', { text:'Open the recorder, tap Start while parked, then leave the phone alone. Keep the screen on; phones pause sensors in the background.' }),
+      h('li', { text:'Stop once you’ve parked, then save the file and import it here.' })
+    ]) ]));
+  box.appendChild(h('div', { class:'card stack' }, [
+    h('h3', { text:'Data from other apps' }),
+    h('p', { class:'small mute', text:'Any app that exports .gpx with timestamps works, such as Strava or a GPS logger. Those files have no accelerometer data, so braking and turn-in scores are less sharp.' }) ]));
+  return box;
+}
+
+render();
+initStore();
+})();
+</script>
